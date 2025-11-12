@@ -3,14 +3,43 @@
  */
 package cookbook;
 
+import java.util.List;
 import java.util.Scanner;
 
-public class App {
-    public static String getGreeting() {
-        return "Hello World!";
-    }
+import cookbook.recipe.Recipe;
 
+public class App {
     public static void main(String[] args) {
-        System.out.println(App.getGreeting());
+        Scanner input = new Scanner(System.in);
+        System.out.println("This is the smart cookbook, your AI assisted cookbook.\nTell me your ingredients to start");
+        String availableIngredients = input.nextLine();
+        System.out.print("Thinking...");
+        List<Recipe> recipes = Parser.getRecipes(availableIngredients);
+
+        System.out.println("\rAlright! Here are three recipes based on your ingredients:\n");
+        int i = 0;
+        for (Recipe r : recipes) {
+            System.out.println(Integer.toString(++i)+") "+r.getName());
+            System.out.println("Avarage duration: "+r.getDuration()+" minutes");
+            System.out.println("Ingredients:");
+
+            r.getIngredients().forEach(ingredient -> {
+                System.out.print("    "+ingredient.getName()+" - "+ingredient.getQuantity()+" "+ingredient.getUnit());
+                if (ingredient.isAvailable())
+                    System.out.println(" (Available)");
+                else
+                    System.out.println();
+            });
+            System.out.println();
+        };
+
+        System.out.println("Choose one recipe (1-3)");
+        Recipe selectedRecipe = recipes.get(input.nextInt()-1);
+        input.close();
+
+        System.out.println("Great, here are the steps to cook "+selectedRecipe.getName()+":");
+        i = 0;
+        for (String step : selectedRecipe.getSteps())
+            System.out.println("  "+Integer.toString(++i)+". "+step+"\n");
     }
 }
