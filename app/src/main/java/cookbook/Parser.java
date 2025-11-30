@@ -35,7 +35,7 @@ public class Parser {
     "temperature": 1,
     "max_completion_tokens": 8192,
     "top_p": 1,
-    "stream": true,
+    "stream": false,
     "reasoning_effort": "medium",
     "stop": null
 }
@@ -89,14 +89,16 @@ Each recipe object must have this exact structure:
 The maximum duration for a recipe must be 30 minutes.
 You are allowed to suggest recipes that require other ingredients, as well as recipes that do not use all the available ones.
 If the user tries says only absurd ingredients (metal pipes, poo or the andromeda galaxy), you are allowed to ignore the user input and suggest other recipes without available ingredients (mark them as not available). However, if the user says at least one plausible ingredient, use it.
-Respond with only valid JSON. Do not include explanations, notes, or Markdown fences.
+Respond with only valid JSON. Do not include explanations, notes, or Markdown fences. Do not abbreviate measures like tablespoon to tbsp, only units like grams to g.
 """;
 
     public static List<Recipe> getRecipes(String ingredients) {
         String requestBody = sendRequest(ingredients);
-        List<Recipe> recipes = parseRequestBody(requestBody);
 
-        return recipes;
+        if (requestBody == null)
+            throw new RuntimeException("HTTP request returned null body.");
+
+        return parseResponse(requestBody);
     }
 
     private static String buildPayload(String userPrompt) {
@@ -129,10 +131,14 @@ Respond with only valid JSON. Do not include explanations, notes, or Markdown fe
             
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-            if (response.statusCode() == 200) {
-                return response.body();
+            if (response.statusCode() != 200) {
+                System.out.println("Groq API error " + response.statusCode());
+                System.out.println(response.body());
+                return null;
             }
-            else return null;
+
+            return response.body();
+
         } catch (IOException | InterruptedException e) {
             System.out.println("Error during HTTP request: " + e.getMessage());
             e.printStackTrace();
@@ -140,35 +146,23 @@ Respond with only valid JSON. Do not include explanations, notes, or Markdown fe
         }
     }
 
-    private static List<Recipe> parseRequestBody(String body) {
-        ObjectMapper mapper = new ObjectMapper();
-        StringBuilder contentBuilder = new StringBuilder();
-
-        for (String line : body.split("\n")) {
-            line = line.trim();
-            if (!line.startsWith("data: ")) continue;
-
-            String jsonPart = line.substring(6).trim();
-            if (jsonPart.equals("[DONE]")) break;
-
-            try {
-                JsonNode root = mapper.readTree(jsonPart);
-                JsonNode choices = root.path("choices");
-                if (choices.isArray() && choices.size() > 0) {
-                    JsonNode delta = choices.get(0).path("delta");
-                    JsonNode content = delta.path("content");
-                    if (!content.isMissingNode()) {
-                        contentBuilder.append(content.asText());
-                    }
-                }
-            } catch (Exception ignored) {}
-        }
-
+    private static List<Recipe> parseResponse(String body) {
         try {
+            ObjectMapper mapper = new ObjectMapper();
+
+            JsonNode root = mapper.readTree(body);
+
+            String content = root.path("choices").get(0)
+                                 .path("message").path("content").asText();
+
+            if (content == null || content.isEmpty())
+                throw new RuntimeException("Model returned empty content.");
+
             return mapper.readValue(
-                contentBuilder.toString(),
+                content,
                 mapper.getTypeFactory().constructCollectionType(List.class, Recipe.class)
             );
+
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse model JSON output", e);
         }

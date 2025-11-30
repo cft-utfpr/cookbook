@@ -36,9 +36,6 @@ java {
 application {
     // Define the main class for the application.
     mainClass = 'cookbook.App'
-    run {
-        standardInput = System.in
-    }
 }
 
 tasks.named('test') {

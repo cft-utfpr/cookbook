@@ -6,3 +6,6 @@ build
 
 .vscode
 prompt.txt
+secret.txt
+
+app/bin
