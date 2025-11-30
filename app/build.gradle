@@ -43,3 +43,8 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
+jar {
+    manifest {
+        attributes 'Main-Class': 'cookbook.App'
+    }
+}
