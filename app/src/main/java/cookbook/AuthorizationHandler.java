@@ -14,9 +14,7 @@ public class AuthorizationHandler {
     private static String auth = null;
 
     private static void loadAuth() {
-        Path authPath = APP_PATH.resolve("authorization.txt");
-
-        System.out.println(authPath.toString());
+        Path authPath = APP_PATH.getParent().resolve("authorization.txt");
 
         if (!authPath.toFile().exists()) {
             auth = JOptionPane.showInputDialog("API Key");
