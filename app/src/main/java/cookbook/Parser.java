@@ -17,8 +17,6 @@ import cookbook.recipe.Recipe;
 public class Parser {
     private static final String URL = "https://api.groq.com/openai/v1/chat/completions";
 
-    private static final String auth = "";
-
     private static final String REQUEST_STRING = """
 {
     "messages": [
@@ -125,7 +123,7 @@ Respond with only valid JSON. Do not include explanations, notes, or Markdown fe
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(URL))
                     .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer "+auth)
+                    .header("Authorization", "Bearer " + AuthorizationHandler.getAuthorization())
                     .POST(HttpRequest.BodyPublishers.ofString(buildPayload(data)))
                     .build();
             
